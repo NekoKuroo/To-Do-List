@@ -1,201 +1,192 @@
-// document.addEventListener('DOMContentLoaded', function() {
-//     let datas = JSON.parse(localStorage.getItem('todos')) || []; //tambah localstorage
-
-//     const btnForm = document.getElementById('todo-form');
-
-//     btnForm.addEventListener('submit', function(e) {
-//         e.preventDefault();
-//         const todoInput = document.getElementById('todo-input').value.trim();
-        
-//         if (todoInput !== "") {
-//             datas.push({
-//                 text: todoInput,
-//                 completed: false
-//             });
-//             saveData();
-//             document.getElementById('todo-input').value = '';
-//             render();
-//         }
-//     });
-
-//     function render() {
-//         const todoItems = document.getElementById('todo-items');
-//         todoItems.innerHTML = '';
-
-//         datas.forEach((task, index) => {
-//             const newLi = document.createElement('li');
-
-//             const newSpan = document.createElement('span');
-//             newSpan.setAttribute('class', 'task');
-//             newSpan.textContent = task.text;
-            
-//             if (task.completed) {
-//                 newSpan.style.textDecoration = "line-through";
-//                 newSpan.style.color = 'salmon';
-//             }
-//             // Tombol Done (toggle)
-//             const doneBtn = document.createElement('button');
-//             doneBtn.textContent = '✔';
-//             doneBtn.classList.add('done-btn');
-//             doneBtn.addEventListener('click', () => {
-//                 datas[index].completed = !datas[index].completed;
-//                 saveData();
-//                 render();
-//             });
-
-//             // Tombol Hapus
-//             const deleteBtn = document.createElement('button');
-//             deleteBtn.textContent = '✖';
-//             deleteBtn.classList.add('delete-btn');
-//             deleteBtn.addEventListener('click', () => {
-//                 datas.splice(index, 1); // hapus dari array
-//                 saveData();
-//                 render(); // render ulang
-//             });
-
-//             //Tombol Edit
-//             const editBtn = document.createElement('button');
-//             editBtn.textContent = '✎';
-//             editBtn.classList.add('edit-btn');
-//             editBtn.addEventListener('click', () => {
-//                 const newText = prompt('Edit task:', task.text);
-//                 if (newText !== null && newText.trim() !== ""){
-//                     datas[index].text = newText.trim();
-//                     saveData();
-//                     render();
-//                 }
-//             });
-
-//             newLi.appendChild(newSpan);
-//             newLi.appendChild(doneBtn);
-//             newLi.appendChild(deleteBtn);
-//             newLi.appendChild(editBtn);
-//             todoItems.appendChild(newLi);
-//         });
-//     }
-
-//     function saveData(){
-//         localStorage.setItem('todos', JSON.stringify(datas));
-//     }
-//     render();
-// });
-
-
 document.addEventListener('DOMContentLoaded', function() {
-    
     let datas = JSON.parse(localStorage.getItem('todos')) || [];
+
+    const todoForm = document.getElementById('todo-form');
     const todoItems = document.getElementById('todo-items');
 
-    // function simpan data ke localstorage
     function saveData(){
         localStorage.setItem('todos', JSON.stringify(datas));
     }
 
-    // function tombol form
-    document.getElementById('todo-form').addEventListener('submit', function(e) {
+    // function tombol form (tombol utama)
+    todoForm.addEventListener('submit', (e) => {
         e.preventDefault();
 
         const todoInput = document.getElementById('todo-input').value.trim();
-        if (todoInput !== ""){
-            datas.push ({
-                text: todoInput,
-                completed: false
-            });
+        if(todoInput !== ''){
+            datas.push({
+                task: todoInput,
+                toggle: false,
+            })
+            render();
+            saveData();
+            todoForm.reset(); //reset menjadi kosong
         }
-        this.reset();
+    })
+
+    function toggleDoneBtn(index){
+        datas[index].toggle = !datas[index].toggle;
+        saveData();
         render();
-    });
+    }
 
-
-    // function render
-    function render(){
-        todoItems.innerHTML = '';
-
-        datas.forEach((task, index) => {  
-
-            const newLi = document.createElement('li');
-
-            const newSpan = document.createElement('span');
-            newSpan.setAttribute('class', 'task');
-            newSpan.textContent = task.text;
-            
-            if(task.completed){
-                newSpan.style.textDecoration = "line-through";
-                newSpan.style.color = 'salmon';
-                newSpan.classList.add('completed');
+    function todoDelete(index){
+        datas.splice(index,1);
+        saveData();
+        render();
+    }
+    
+    function todoEdit(index){
+        let modal = document.getElementById('edit-modal');
+        if(!modal){
+            modal = document.createElement('div');
+            modal.id = 'edit-modal';
+            modal.className = 'modal';
+            modal.innerHTML = `
+            <div class="modal-content">
+                <h3>Edit Tugas</h3>
+                <input type="text" id="edit-input">
+                <div class="modal-buttons">
+                <button id="save-edit">Simpan</button>
+                <button id="cancel-edit">Batal</button>
+                </div>
+            </div>`;
+            document.body.appendChild(modal);
+        
+            // CSS dasar + animasi fade
+            const style = document.createElement('style');
+            style.textContent = `
+            .modal {
+                display: flex;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+                position: fixed;
+                z-index: 999;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                justify-content: center;
+                align-items: center;
             }
 
-            const doneBtn = document.createElement('button');
-            doneBtn.classList.add('done-btn');
-            doneBtn.textContent = '✔';
-            doneBtn.addEventListener('click',() => {
-                datas[index].completed = !datas[index].completed;
-                saveData();
-                render();
-            }) // doneBtn.addEventListener('click', () => toggleComplete(index));
+            .modal.show {
+                opacity: 1;
+                pointer-events: auto;
+            }
 
-            const deleteBtn = document.createElement('button');
-            deleteBtn.classList.add('delete-btn');
-            deleteBtn.textContent = '✖';
-            deleteBtn.addEventListener('click', function() {
-                datas.splice(index,1);
-                saveData();
-                render();
-            })//deleteBtn.addEventListener('click', () => deleteTodo(index));
+            .modal-content {
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.3);
+                text-align: center;
+                min-width: 300px;
+                transform: scale(0.9);
+                transition: transform 0.3s ease;
+            }
 
-            const editBtn = document.createElement('button');
-            editBtn.classList.add('edit-btn');
-            editBtn.textContent = '✎';
-            editBtn.addEventListener('click', function() {
-                const newText = prompt('edit tugas:', task.text);
-                if (newText !== null && newText.trim() !== "") {
-                    datas[index].text = newText.trim();
+            .modal.show .modal-content {
+                transform: scale(1);
+            }
+
+            .modal-buttons {
+                margin-top: 15px;
+            }
+            .modal-buttons button {
+                margin: 0 5px;
+            }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // tampilkan modal (fade-in)
+        modal.classList.add('show');
+        
+        // isi inputan teks lama nya
+        const editInput = modal.querySelector('#edit-input');
+        editInput.value = datas[index].task;
+        editInput.focus();
+
+        // simpan perubahan
+        modal.querySelector('#save-edit').onclick = () => {
+            const newText = editInput.value.trim();
+            if(newText !== ''){
+                datas[index].task = newText;
+                saveData();
+
+                // fade-out sebelum disembunyikan
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    render();
+                }, 300);
+            }
+        }
+        
+        // batal edit
+        modal.querySelector('#cancel-edit').onclick = () => {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                render();
+            }, 300);
+        }
+        
+        // tutup modal jika diKLIK diluar box
+        modal.onclick = (e) => {
+            if(e.target === modal){
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    render();
+                }, 300);
+            }
+        }
+        // pastikan modal visible sebelum animasi jalan
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    // function menampilkan halaman
+    function render(){
+            todoItems.innerHTML = '';
+
+            datas.forEach((task,index) => {
+                const li = document.createElement('li');
+
+                const span = document.createElement('span');
+                span.className = 'task'
+                span.textContent = task.task;    
+                if(task.toggle){
+                    span.style.color = 'maroon';
+                    span.style.textDecoration = 'line-through';       
+                    span.style.backgroundColor = 'lightblue'; 
                 }
-                saveData();
-                render();
-            })//editBtn.addEventListener('click', () => editTodo(index));
 
-            newLi.appendChild(newSpan);
-            newLi.appendChild(doneBtn);
-            newLi.appendChild(deleteBtn);
-            newLi.appendChild(editBtn);
-            todoItems.appendChild(newLi);
-        });
+                const doneBtn = document.createElement('button');
+                doneBtn.classList.add('done-btn');
+                doneBtn.textContent = 'done ✔';
+                doneBtn.addEventListener('click', () => toggleDoneBtn(index));
+
+                const editBtn = document.createElement('button');
+                editBtn.classList.add('edit-btn');
+                editBtn.textContent = 'edit✎';
+                editBtn.addEventListener('click', () => todoEdit(index));
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-btn');
+                deleteBtn.textContent = 'delete✖';
+                deleteBtn.addEventListener('click', () => todoDelete(index));
+
+                li.appendChild(span);
+                li.appendChild(doneBtn);
+                li.appendChild(editBtn);
+                li.appendChild(deleteBtn);
+                todoItems.appendChild(li);
+        })
     }
     render();
-});
-/*Fungsi untuk menambah tugas
-            function addTodo(e) {
-                e.preventDefault();
-                const todoText = todoInput.value.trim();
-                
-                if (todoText !== "") {
-                    datas.push({
-                        text: todoText,
-                        completed: false
-                    });
-                    saveData();
-                    todoInput.value = '';
-                    render();
-                }
-            }
-
-Fungsi untuk mengedit tugas
-            function editTodo(index) {
-                const newText = prompt('Edit tugas:', datas[index].text);
-                if (newText !== null && newText.trim() !== "") {
-                    datas[index].text = newText.trim();
-                    saveData();
-                    render();
-                }
-            }
-                
-Fungsi untuk menghapus tugas
-            function deleteTodo(index) {
-                if (confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
-                    datas.splice(index, 1);
-                    saveData();
-                    render();
-                }
-            }
-*/
+})
